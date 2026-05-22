@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>DLXR Tracker Multi V5</title>
+  <title>DLXR Tracker Multi V3</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap" rel="stylesheet" />
   <style>
@@ -124,7 +124,7 @@
 <body>
 
   <header>
-    <div class="logo">DL<span>X</span>R MULTI V5</div>
+    <div class="logo">DL<span>X</span>R MULTI V3</div>
     <button id="ble-btn" onclick="connectBLE()">⚡ CONNECTER</button>
   </header>
 
@@ -140,12 +140,6 @@
       <div id="no-model">En attente de signal...</div>
     </div>
     <div id="status">EN ATTENTE DE CONNEXION BLE</div>
-  </div>
-
-  <div id="log-bar">
-    <button id="log-btn" onclick="toggleLog()">⏺ LOG</button>
-    <button id="dl-btn" onclick="downloadLog()">⬇ TÉLÉCHARGER</button>
-    <span id="log-info">Log inactif</span>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -313,7 +307,6 @@
 
         updateModelMap(did, m);
         updateModelPanel(did, m);
-        logTrame(did, m);
 
         setStatus(`${did} — trame #${m.rxCount} — ${m.etat}`);
 
@@ -419,81 +412,6 @@
         reconnectTimer = setTimeout(() => autoReconnect(), 3000);
       }
     }
-
-    // ─── FONCTIONS LOG ────────────────────────────────────────────
-    function toggleLog() {
-      logActive = !logActive;
-      const btn = document.getElementById('log-btn');
-      const dlBtn = document.getElementById('dl-btn');
-      const info = document.getElementById('log-info');
-      if (logActive) {
-        logLines = [LOG_HEADER];
-        logStartTime = new Date();
-        btn.textContent = '⏹ STOP LOG';
-        btn.classList.add('active');
-        dlBtn.style.display = 'inline-block';
-        info.textContent = '0 trames';
-        setStatus('Log démarré');
-      } else {
-        btn.textContent = '⏺ LOG';
-        btn.classList.remove('active');
-        const n = logLines.length - 1;
-        info.textContent = n + ' trames enregistrées';
-        setStatus('Log arrêté — ' + n + ' trames');
-      }
-    }
-
-    function calcAzimut(lat1, lon1, lat2, lon2) {
-      if (!lat1 || !lat2) return '';
-      const toRad = d => d * Math.PI / 180;
-      const dLon = toRad(lon2 - lon1);
-      const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-      const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2))
-              - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-      let az = Math.atan2(y, x) * 180 / Math.PI;
-      return ((az + 360) % 360).toFixed(1);
-    }
-
-    function logTrame(did, m) {
-      if (!logActive) return;
-      if (m.lat === 0 && m.lon === 0) return;
-      const now = new Date();
-      const heure = now.toTimeString().slice(0, 8);
-      const az = calcAzimut(myLat, myLon, m.lat, m.lon);
-      const line = [
-        heure,
-        did,
-        m.lat.toFixed(7),
-        m.lon.toFixed(7),
-        m.alt.toFixed(1),
-        m.dist.toFixed(0),
-        az,
-        m.etat,
-        m.rssi.toFixed(0)
-      ].join(';');
-      logLines.push(line);
-      const n = logLines.length - 1;
-      document.getElementById('log-info').textContent = n + ' trames';
-    }
-
-    function downloadLog() {
-      if (logLines.length <= 1) {
-        setStatus('Log vide — rien à télécharger');
-        return;
-      }
-      const now = logStartTime || new Date();
-      const pad = n => String(n).padStart(2, '0');
-      const stamp = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate())
-                  + '_' + pad(now.getHours()) + pad(now.getMinutes());
-      const filename = 'DLXR_log_' + stamp + '.csv';
-      const blob = new Blob([logLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = filename; a.click();
-      URL.revokeObjectURL(url);
-      setStatus('Fichier téléchargé : ' + filename);
-    }
-    // ──────────────────────────────────────────────────────────────
 
     async function autoReconnect() {
       if (!bleDevice) { isReconnecting = false; return; }
