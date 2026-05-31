@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>DLXR Tracker Multi V5</title>
+  <title>DLXR Tracker Multi V6</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;600;800&display=swap" rel="stylesheet" />
   <style>
@@ -79,6 +79,14 @@
     .model-data .alt  { color: var(--accent); }
     .model-data .dist { color: var(--green); }
     .model-data .rssi { color: var(--muted); }
+    .nav-btn {
+      margin-left: auto; flex-shrink: 0;
+      background: transparent; border: 1.5px solid var(--green);
+      color: var(--green); font-family: var(--mono); font-size: 0.65rem;
+      padding: 2px 8px; border-radius: 4px; cursor: pointer; letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .nav-btn:active { background: var(--green); color: var(--bg); }
 
     #status {
       font-family: var(--mono); font-size: 0.6rem; color: var(--muted);
@@ -124,7 +132,7 @@
 <body>
 
   <header>
-    <div class="logo">DL<span>X</span>R MULTI V5</div>
+    <div class="logo">DL<span>X</span>R MULTI V6</div>
     <button id="ble-btn" onclick="connectBLE()">⚡ CONNECTER</button>
   </header>
 
@@ -224,7 +232,8 @@
           <span class="alt" id="alt-${did}">Alt:--</span>
           <span class="dist" id="dist-${did}">--m</span>
           <span class="rssi" id="rssi-${did}">--dBm</span>
-        </div>`;
+        </div>
+        <button class="nav-btn" id="nav-${did}" onclick="navigateTo('${did}')" disabled>🧭 NAV</button>`;
 
       const noModel = document.getElementById('no-model');
       if (noModel) noModel.remove();
@@ -295,6 +304,21 @@
         ? `Dist:${parseFloat(m.dist).toFixed(0)}m`
         : `Dist:${(m.dist / 1000).toFixed(2)}km`;
       rssiEl.textContent = `${parseFloat(m.rssi).toFixed(0)}dBm`;
+
+      // Activer le bouton NAV si coordonnées valides
+      const navBtn = document.getElementById('nav-' + did);
+      if (navBtn && m.lat !== 0 && m.lon !== 0) {
+        navBtn.disabled = false;
+        navBtn.style.borderColor = 'var(--green)';
+        navBtn.style.color = 'var(--green)';
+      }
+    }
+
+    function navigateTo(did) {
+      const m = models[did];
+      if (!m || m.lat === 0 || m.lon === 0) return;
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${m.lat.toFixed(7)},${m.lon.toFixed(7)}&travelmode=walking`;
+      window.open(url, '_blank');
     }
 
     // Buffer BLE — les trames BLE peuvent arriver en plusieurs fragments
